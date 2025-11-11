@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GE Healthcare × BeesLab | YOLO Image Labeler</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="header">
+        <div class="logo-group">
+            <img src="GE_HealthCare_logo_2023.png" alt="GE Healthcare" class="logo">
+            <img src="beeslab.png" alt="BeesLab" class="logo">
+        </div>
+        <h1>YOLO Crop Labeling Tool</h1>
+    </div>
+
+    <div class="container">
+        <div id="progress">Loading images from /images folder...</div>
+
+        <div class="main-area">
+            <!-- Center: Image -->
+            <div class="image-section">
+                <div id="imageContainer">
+                    <img id="currentImage" src="" alt="YOLO Crop">
+                    <div id="filename"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button id="prevBtn">Previous</button>
+                    <button id="nextBtn">Next</button>
+                </div>
+                <div class="keyboard-hint">
+                    Use ← → arrow keys or Space • Press 1–4 to label
+                </div>
+            </div>
+
+            <!-- Right: Label Buttons -->
+            <div class="button-section">
+                <button class="label-btn garbage"><span class="num">1</span> Garbage</button>
+                <button class="label-btn normal"><span class="num">2</span> Normal</button>
+                <button class="label-btn atypical"><span class="num">3</span> Atypical</button>
+                <button class="label-btn discard"><span class="num">4</span> Discard</button>
+                <button id="downloadBtn">Download Labels (JSON)</button>
+            </div>
+        </div>
+
+        <div id="doneMessage" class="hidden">
+            <h2>All Images Labeled!</h2>
+            <p><strong><span id="labeledCount">0</span></strong> images labeled successfully.</p>
+            <button id="downloadFinal">Download Final Labels</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
