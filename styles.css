@@ -1,3 +1,63 @@
+.welcome-card {
+    background: white;
+    max-width: 700px;
+    margin: 80px auto;
+    padding: 50px;
+    border-radius: 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    border: 2px solid #D9CFC7;
+    text-align: center;
+}
+
+.welcome-card h2 {
+    font-size: 2.2em;
+    color: #5d4e3d;
+    margin-bottom: 15px;
+}
+
+.welcome-card p {
+    color: #8a7a68;
+    font-size: 1.2em;
+    margin-bottom: 30px;
+}
+
+.upload-area {
+    border: 4px dashed #C9B59C;
+    border-radius: 20px;
+    padding: 60px;
+    background: #EFE9E3;
+    margin: 30px 0;
+    transition: 0.3s;
+}
+
+.upload-area:hover, .dragover {
+    background: #E2D9D0;
+    border-color: #8a6f48;
+}
+
+#browseBtn, #startBtn {
+    padding: 18px 40px;
+    font-size: 1.3em;
+    background: #C9B59C;
+    color: #3c2f1f;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    font-weight: 700;
+    margin: 10px;
+}
+
+#startBtn {
+    background: #8a6f48;
+    color: white;
+    margin-top: 30px;
+}
+
+#startBtn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: 'Inter', sans-serif;

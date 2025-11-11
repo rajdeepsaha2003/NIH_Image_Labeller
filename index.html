@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GE Healthcare × BeesLab | YOLO Image Labeler</title>
+    <title>GE Healthcare × BeesLab | Select Image Folder</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -18,42 +17,77 @@
     </div>
 
     <div class="container">
-        <div id="progress">Loading images from /images folder...</div>
-
-        <div class="main-area">
-            <!-- Center: Image -->
-            <div class="image-section">
-                <div id="imageContainer">
-                    <img id="currentImage" src="" alt="YOLO Crop">
-                    <div id="filename"></div>
-                </div>
-
-                <div class="nav-buttons">
-                    <button id="prevBtn">Previous</button>
-                    <button id="nextBtn">Next</button>
-                </div>
-                <div class="keyboard-hint">
-                    Use ← → arrow keys or Space • Press 1–4 to label
-                </div>
+        <div class="welcome-card">
+            <h2>Select Folder with YOLO Crops</h2>
+            <p>Choose a folder containing only cropped images from YOLO model</p>
+            
+            <div class="upload-area" id="dropZone">
+                <p>Drag & drop folder here<br>or</p>
+                <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none">
+                <button id="browseBtn">Browse Folder</button>
             </div>
 
-            <!-- Right: Label Buttons -->
-            <div class="button-section">
-                <button class="label-btn garbage"><span class="num">1</span> Garbage</button>
-                <button class="label-btn normal"><span class="num">2</span> Normal</button>
-                <button class="label-btn atypical"><span class="num">3</span> Atypical</button>
-                <button class="label-btn discard"><span class="num">4</span> Discard</button>
-                <button id="downloadBtn">Download Labels (JSON)</button>
-            </div>
-        </div>
-
-        <div id="doneMessage" class="hidden">
-            <h2>All Images Labeled!</h2>
-            <p><strong><span id="labeledCount">0</span></strong> images labeled successfully.</p>
-            <button id="downloadFinal">Download Final Labels</button>
+            <div id="fileList"></div>
+            
+            <button id="startBtn" disabled>Start Labeling</button>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const folderInput = document.getElementById('folderInput');
+        const browseBtn = document.getElementById('browseBtn');
+        const startBtn = document.getElementById('startBtn');
+        const fileList = document.getElementById('fileList');
+        
+        let selectedFiles = [];
+
+        browseBtn.onclick = () => folderInput.click();
+        
+        folderInput.onchange = (e) => {
+            selectedFiles = Array.from(e.target.files).filter(f => 
+                /\.(jpe?g|png|bmp|webp)$/i.test(f.name)
+            );
+            displayFiles();
+        };
+
+        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('dragover'); };
+        dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            selectedFiles = Array.from(e.dataTransfer.items)
+                .filter(item => item.kind === 'file')
+                .map(item => item.getAsFile())
+                .filter(f => f && /\.(jpe?g|png|bmp|webp)$/i.test(f.name));
+            displayFiles();
+        };
+
+        function displayFiles() {
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '<p>No images found</p>';
+                startBtn.disabled = true;
+                return;
+            }
+            
+            fileList.innerHTML = `
+                <p><strong>${selectedFiles.length}</strong> images ready</p>
+                <div style="max-height:200px;overflow:auto;margin:15px 0;padding:10px;background:#EFE9E3;border-radius:12px;">
+                    ${selectedFiles.map(f => `<div style="font-size:0.9em;margin:4px 0;">${f.name}</div>`).join('')}
+                </div>
+            `;
+            startBtn.disabled = false;
+        }
+
+        startBtn.onclick = () => {
+            const imagesData = selectedFiles.map(file => ({
+                name: file.name,
+                url: URL.createObjectURL(file)
+            }));
+            localStorage.setItem('yolo_images_batch', JSON.stringify(imagesData));
+            localStorage.setItem('yolo_labels_batch', JSON.stringify({}));
+            window.location.href = 'labeler.html';
+        };
+    </script>
 </body>
 </html>
