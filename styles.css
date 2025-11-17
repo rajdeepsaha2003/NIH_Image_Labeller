@@ -285,3 +285,101 @@ h1 {
 .hf-link:hover {
   background: #e5e5e5;
 }
+
+/* === EXTRA RESPONSIVE FIXES === */
+
+/* Canvas auto-scale */
+canvas, 
+#originalCanvas, 
+#cropCanvas {
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .upload-card {
+    max-width: 90%;
+    padding: 35px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  .nav-btn {
+    padding: 10px 18px;
+    font-size: 1rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+
+  .header {
+    padding: 12px 20px;
+  }
+
+  .logo {
+    height: 48px;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  .upload-card {
+    padding: 25px 20px;
+    margin: 20px;
+    border-radius: 18px;
+  }
+
+  .upload-card h2 {
+    font-size: 1.4rem;
+  }
+
+  .upload-card p {
+    font-size: 0.95rem;
+  }
+
+  .btn-upload,
+  .btn-download {
+    padding: 12px 16px;
+    font-size: 1.1rem;
+  }
+
+  .layout-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .label-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .label-btn {
+    padding: 14px 12px;
+    font-size: 1.1rem;
+    padding-left: 50px;
+  }
+
+  .num {
+    width: 26px;
+    height: 26px;
+    font-size: 0.8rem;
+  }
+
+  .counters {
+    font-size: 1rem;
+  }
+}
+
+/* Text scale */
+html {
+  font-size: 16px;
+}
+@media (max-width: 600px) {
+  html {
+    font-size: 14px;
+  }
+}
