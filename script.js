@@ -1,146 +1,261 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const el = {
-        folderSelector: document.getElementById('folderSelector'),
-        mainArea: document.getElementById('mainArea'),
-        progress: document.getElementById('progress'),
-        image: document.getElementById('currentImage'),
-        filename: document.getElementById('filename'),
-        prevBtn: document.getElementById('prevBtn'),
-        nextBtn: document.getElementById('nextBtn'),
-        downloadBtn: document.getElementById('downloadBtn'),
-        doneMessage: document.getElementById('doneMessage'),
-        labeledCount: document.getElementById('labeledCount'),
-        downloadFinal: document.getElementById('downloadFinal'),
-        newFolderBtn: document.getElementById('newFolderBtn'),
-        changeFolder: document.getElementById('changeFolder')
+  const el = {
+    zipCard: document.getElementById('zipCard'),
+    mainArea: document.getElementById('mainArea'),
+    progress: document.getElementById('progress'),
+    originalCanvas: document.getElementById('originalCanvas'),
+    cropCanvas: document.getElementById('cropCanvas'),
+    prevBoxBtn: document.getElementById('prevBoxBtn'),
+    nextBoxBtn: document.getElementById('nextBoxBtn'),
+    imgCount: document.getElementById('imgCount'),
+    boxCount: document.getElementById('boxCount'),
+    downloadBtn: document.getElementById('downloadBtn'),
+    doneCard: document.getElementById('doneCard'),
+    finalCount: document.getElementById('finalCount'),
+    downloadFinal: document.getElementById('downloadFinal'),
+    newZipBtn: document.getElementById('newZipBtn'),
+    zipInput: document.getElementById('zipInput'),
+    uploadBtn: document.getElementById('uploadBtn')
+  };
+
+  let images = [];
+  let currentImg = 0;
+  let currentBox = 0;
+  let labels = {};
+
+  const classMap = { garbage: 0, normal: 1, atypical: 2 };
+
+  // ZIP Upload
+  el.uploadBtn.onclick = () => el.zipInput.click();
+  el.zipInput.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    el.progress.textContent = 'Extracting ZIP...';
+    try {
+      const zip = await JSZip.loadAsync(file);
+      const entries = Object.values(zip.files).filter(f => !f.dir);
+      const imgEntries = entries.filter(f => /\.(jpe?g|png|bmp|webp)$/i.test(f.name));
+
+      images = [];
+      for (const entry of imgEntries) {
+        const name = entry.name.split('/').pop();
+        const base = name.replace(/\.[^/.]+$/, "");
+        const txtEntry = entries.find(t => t.name.includes(base + '.txt'));
+        const blob = await entry.async('blob');
+        const url = URL.createObjectURL(blob);
+
+        let bboxes = [];
+        if (txtEntry) {
+          const txt = await txtEntry.async('text');
+          bboxes = txt.trim().split('\n').map(line => {
+            const [cls, x, y, w, h] = line.split(' ').map(Number);
+            return { x, y, w, h, label: null };
+          });
+        }
+        images.push({ name, url, bboxes, currentBox: 0 });
+      }
+
+      if (images.length === 0) throw "No images found";
+
+      labels = {};
+      startLabeling();
+    } catch (err) {
+      el.progress.textContent = 'Error loading ZIP. Please try again.';
+    }
+  };
+
+  function startLabeling() {
+    el.zipCard.classList.add('hidden');
+    el.mainArea.classList.remove('hidden');
+    currentImg = 0;
+    currentBox = 0;
+    loadCurrentImage();
+  }
+
+  function loadCurrentImage() {
+    const img = images[currentImg];
+    if (!img || img.bboxes.length === 0) {
+      nextImage();
+      return;
+    }
+
+    el.imgCount.textContent = `${currentImg + 1}/${images.length}`;
+    updateBoxCounter();
+    drawOriginal();
+  }
+
+  function drawOriginal() {
+    const imgData = images[currentImg];
+    const box = imgData.bboxes[currentBox];
+    const img = new Image();
+    img.src = imgData.url;
+
+    img.onload = () => {
+      const ctx = el.originalCanvas.getContext('2d');
+      el.originalCanvas.width = img.width;
+      el.originalCanvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+
+      // Draw all bounding boxes
+      imgData.bboxes.forEach((b, i) => {
+  const x = (b.x - b.w / 2) * img.width;
+  const y = (b.y - b.h / 2) * img.height;
+  const w = b.w * img.width;
+  const h = b.h * img.height;
+
+  if (i === currentBox) {
+    ctx.strokeStyle = '#f80000ff';   // coral
+    ctx.lineWidth = 20;
+
+    // Optional glow
+    ctx.shadowColor = '#B7A3E3';
+    ctx.shadowBlur = 20;
+  } else {
+    ctx.strokeStyle = '#C2E2FA';   // soft blue
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 0;
+  }
+
+  ctx.strokeRect(x, y, w, h);
+});
+
+
+      // Crop the active box
+      const cx = (box.x - box.w / 2) * img.width;
+      const cy = (box.y - box.h / 2) * img.height;
+      const cw = box.w * img.width;
+      const ch = box.h * img.height;
+
+      el.cropCanvas.width = cw;
+      el.cropCanvas.height = ch;
+      const cctx = el.cropCanvas.getContext('2d');
+      cctx.drawImage(img, cx, cy, cw, ch, 0, 0, cw, ch);
+
+      // Highlight active label
+      highlightActiveLabel(imgData.bboxes[currentBox].label);
     };
+  }
 
-    let images = [];
-    let currentIndex = 0;
-    let labels = {};
+  function updateBoxCounter() {
+    const img = images[currentImg];
+    el.boxCount.textContent = `${currentBox + 1}/${img.bboxes.length}`;
+  }
 
-    // Load from localStorage or default
-    const saved = localStorage.getItem('yolo_images_final');
-    if (saved) {
-        images = JSON.parse(saved);
-        labels = JSON.parse(localStorage.getItem('yolo_labels_final') || '{}');
-        startLabeling();
+  // Active label glow + bold
+  function highlightActiveLabel(label) {
+    document.querySelectorAll('.label-btn').forEach(b => {
+      b.classList.remove('active');
+      b.style.opacity = '0.85';
+    });
+    if (label && label !== 'discard') {
+      const btn = document.querySelector(`.${label}`);
+      if (btn) {
+        btn.classList.add('active');
+        btn.style.opacity = '1';
+      }
+    }
+  }
+
+  function saveLabel(label) {
+    const key = `${images[currentImg].name}#${currentBox}`;
+    if (label === 'discard') {
+      delete labels[key];
+      images[currentImg].bboxes[currentBox].label = null;
     } else {
-        tryLoadDefaultImages();
+      labels[key] = label;
+      images[currentImg].bboxes[currentBox].label = label;
+    }
+    highlightActiveLabel(label);
+  }
+
+  function nextBox() {
+    const img = images[currentImg];
+    if (currentBox < img.bboxes.length - 1) {
+      currentBox++;
+    } else if (currentImg < images.length - 1) {
+      currentImg++;
+      currentBox = 0;
+    } else {
+      finish();
+      return;
+    }
+    loadCurrentImage();
+  }
+
+  function prevBox() {
+    if (currentBox > 0) {
+      currentBox--;
+    } else if (currentImg > 0) {
+      currentImg--;
+      currentBox = images[currentImg].bboxes.length - 1;
+    }
+    loadCurrentImage();
+  }
+
+  function nextImage() {
+    if (currentImg < images.length - 1) {
+      currentImg++;
+      currentBox = 0;
+      loadCurrentImage();
+    } else {
+      finish();
+    }
+  }
+
+  function finish() {
+    el.mainArea.classList.add('hidden');
+    el.doneCard.classList.remove('hidden');
+    el.finalCount.textContent = Object.values(labels).filter(l => l !== 'discard').length;
+  }
+
+  // Download ZIP
+  async function downloadZip() {
+    const zip = new JSZip();
+    const imgFolder = zip.folder("images");
+    const labelFolder = zip.folder("labels");
+
+    for (const img of images) {
+      const blob = await fetch(img.url).then(r => r.blob());
+      imgFolder.file(img.name, blob);
+
+      const lines = img.bboxes.map((b, i) => {
+        const key = `${img.name}#${i}`;
+        const label = labels[key];
+        if (!label || label === 'discard') return null;
+        return `${classMap[label]} ${b.x} ${b.y} ${b.w} ${b.h}`;
+      }).filter(Boolean);
+
+      if (lines.length > 0) {
+        const txtName = img.name.replace(/\.[^/.]+$/, "") + ".txt";
+        labelFolder.file(txtName, lines.join('\n'));
+      }
     }
 
-    function tryLoadDefaultImages() {
-        fetch('images/').then(r => r.text()).then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const links = doc.querySelectorAll('a');
-            links.forEach(link => {
-                const href = link.getAttribute('href');
-                if (/\.(jpe?g|png|bmp|webp)$/i.test(href)) {
-                    images.push({ name: href.split('/').pop(), url: 'images/' + href.split('/').pop() });
-                }
-            });
-            if (images.length > 0) {
-                localStorage.setItem('yolo_images_final', JSON.stringify(images));
-                startLabeling();
-            } else {
-                el.progress.textContent = "No images in /images folder. Use folder upload.";
-            }
-        }).catch(() => {
-            el.progress.textContent = "GitHub Pages active. Use folder upload below.";
-            el.folderSelector.style.display = 'block';
-        });
+    zip.file("classes.yaml", `names:\n  0: garbage\n  1: normal\n  2: atypical\n`);
+    const blob = await zip.generateAsync({ type: "blob" });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `GE_BeesLab_Labeled_${new Date().toISOString().slice(0,10)}.zip`;
+    a.click();
+  }
+
+  // Events
+  document.querySelectorAll('.label-btn').forEach(btn => {
+    const cls = btn.classList[1];
+    btn.onclick = () => saveLabel(cls === 'discard' ? 'discard' : cls);
+  });
+
+  el.prevBoxBtn.onclick = prevBox;
+  el.nextBoxBtn.onclick = nextBox;
+  el.downloadBtn.onclick = el.downloadFinal.onclick = downloadZip;
+  el.newZipBtn.onclick = () => location.reload();
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') prevBox();
+    if (e.key === 'ArrowRight' || e.key === ' ') nextBox();
+    if (e.key >= '1' && e.key <= '4') {
+      document.querySelectorAll('.label-btn')[e.key - 1].click();
     }
-
-    function startLabeling() {
-        el.folderSelector.style.display = 'none';
-        el.mainArea.classList.remove('hidden');
-        showImage(0);
-    }
-
-    function showImage(i) {
-        if (i < 0 || i >= images.length) return;
-        currentIndex = i;
-        el.image.src = images[i].url;
-        el.filename.textContent = images[i].name;
-        updateProgress();
-        highlightLabel();
-    }
-
-    function updateProgress() {
-        const labeled = Object.keys(labels).length;
-        el.progress.textContent = `Image ${currentIndex + 1}/${images.length} • Labeled: ${labeled}/${images.length}`;
-    }
-
-    function highlightLabel() {
-        document.querySelectorAll('.label-btn').forEach(b => b.style.opacity = '0.75');
-        const name = images[currentIndex].name;
-        if (labels[name]) {
-            document.querySelector(`.${labels[name]}`)?.style.setProperty('opacity', '1');
-        }
-    }
-
-    function saveLabel(label) {
-        const name = images[currentIndex].name;
-        if (label === 'discard') delete labels[name];
-        else labels[name] = label;
-        localStorage.setItem('yolo_labels_final', JSON.stringify(labels));
-        updateProgress();
-        highlightLabel();
-    }
-
-    function downloadJSON() {
-        const data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(labels, null, 2));
-        const a = document.createElement('a');
-        a.href = data;
-        a.download = `GE_BeesLab_Labels_${new Date().toISOString().slice(0,10)}.json`;
-        a.click();
-    }
-
-    // Events
-    document.querySelectorAll('.label-btn').forEach(btn => {
-        btn.onclick = () => saveLabel(btn.classList[1] === 'discard' ? 'discard' : btn.classList[1]);
-    });
-
-    el.prevBtn.onclick = () => showImage(currentIndex - 1);
-    el.nextBtn.onclick = () => {
-        if (currentIndex === images.length - 1) {
-            el.doneMessage.classList.remove('hidden');
-            el.labeledCount.textContent = Object.keys(labels).length;
-        } else {
-            showImage(currentIndex + 1);
-        }
-    };
-
-    el.downloadBtn.onclick = el.downloadFinal.onclick = downloadJSON;
-    el.newFolderBtn.onclick = el.changeFolder.onclick = () => {
-        localStorage.removeItem('yolo_images_final');
-        localStorage.removeItem('yolo_labels_final');
-        location.reload();
-    };
-
-    // Folder upload
-    document.getElementById('browseBtn').onclick = () => document.getElementById('folderInput').click();
-    document.getElementById('folderInput').onchange = (e) => {
-        const files = Array.from(e.target.files).filter(f => /\.(jpe?g|png|bmp|webp)$/i.test(f.name));
-        images = files.map(f => ({ name: f.name, url: URL.createObjectURL(f) }));
-        localStorage.setItem('yolo_images_final', JSON.stringify(images));
-        labels = {};
-        localStorage.setItem('yolo_labels_final', '{}');
-        startLabeling();
-    };
-
-    document.getElementById('useDefaultBtn').onclick = () => {
-        tryLoadDefaultImages();
-    };
-
-    // Keyboard
-    document.addEventListener('keydown', e => {
-        if (e.key === '1') document.querySelector('.garbage').click();
-        if (e.key === '2') document.querySelector('.normal').click();
-        if (e.key === '3') document.querySelector('.atypical').click();
-        if (e.key === '4') document.querySelector('.discard').click();
-        if (e.key === 'ArrowLeft') el.prevBtn.click();
-        if (e.key === 'ArrowRight' || e.key === ' ') el.nextBtn.click();
-    });
+  });
 });

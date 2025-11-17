@@ -1,68 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GE Healthcare × BeesLab | YOLO Labeler</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GE Healthcare × BeesLab | YOLO Crop Labeler</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
-    <div class="header">
-        <div class="logo-group">
-            <img src="GE_HealthCare_logo_2023.png" alt="GE Healthcare" class="logo">
-            <img src="beeslab.png" alt="BeesLab" class="logo">
-        </div>
-        <h1>YOLO Crop Labeling Tool</h1>
+  <div class="header">
+    <div class="logo-group">
+      <img src="GE_HealthCare_logo_2023.png" alt="GE Healthcare" class="logo">
+      <img src="beeslab.png" alt="BeesLab" class="logo">
+    </div>
+    <h1>YOLO Crop Labeling Tool</h1>
+  </div>
+
+  <div class="container">
+    <!-- ZIP Upload Card -->
+    <div id="zipCard" class="upload-card">
+      <h2>Upload Image ZIP</h2>
+      <p>Images + optional .txt prediction files</p>
+      <input type="file" id="zipInput" accept=".zip" style="display:none"/>
+      <button id="uploadBtn" class="btn-upload">Choose ZIP File</button>
     </div>
 
-    <div class="container">
-        <!-- Folder Selector (Only shown if no images loaded) -->
-        <div id="folderSelector" class="welcome-card">
-            <h2>Select Image Folder</h2>
-            <p>Drag & drop folder or click below</p>
-            <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none">
-            <button id="browseBtn">Browse Folder</button>
-            <button id="useDefaultBtn">Use /images folder (GitHub)</button>
+    <!-- Progress -->
+    <div id="progress">Ready. Upload a ZIP to start labeling.</div>
+
+    <!-- Main Labeling Interface -->
+    <div id="mainArea" class="hidden">
+      <div class="layout-grid">
+        <!-- LEFT: Original Image -->
+        <div class="panel left">
+          <div class="canvas-wrapper">
+            <canvas id="originalCanvas"></canvas>
+          </div>
+          <div class="nav-controls">
+            <button id="prevBoxBtn" class="nav-btn">← Previous Box</button>
+            <button id="nextBoxBtn" class="nav-btn">Next Box →</button>
+          </div>
+          <div class="counters">
+            <span>Image: <strong id="imgCount">1/1</strong></span>
+            <span>Box: <strong id="boxCount">1/1</strong></span>
+          </div>
         </div>
 
-        <!-- Progress -->
-        <div id="progress">Loading images...</div>
+        <!-- RIGHT: Crop + Labels -->
+        <div class="panel right">
+          <div class="canvas-wrapper crop">
+            <canvas id="cropCanvas"></canvas>
+          </div>
 
-        <!-- Main Labeling Area -->
-        <div id="mainArea" class="hidden">
-            <div class="main-area">
-                <div class="image-section">
-                    <div id="imageContainer">
-                        <img id="currentImage" src="" alt="Crop">
-                        <div id="filename"></div>
-                    </div>
-                    <div class="nav-buttons">
-                        <button id="prevBtn">Previous</button>
-                        <button id="nextBtn">Next</button>
-                    </div>
-                    <div class="keyboard-hint">
-                        ← → or Space • 1=Garbage 2=Normal 3=Atypical 4=Discard • <a href="#" id="changeFolder">Change Folder</a>
-                    </div>
-                </div>
-                <div class="button-section">
-                    <button class="label-btn garbage"><span class="num">1</span> Garbage</button>
-                    <button class="label-btn normal"><span class="num">2</span> Normal</button>
-                    <button class="label-btn atypical"><span class="num">3</span> Atypical</button>
-                    <button class="label-btn discard"><span class="num">4</span> Discard</button>
-                    <button id="downloadBtn">Download Labels</button>
-                </div>
-            </div>
-        </div>
+          <!-- Label Buttons -->
+          <div class="label-buttons">
+            <button class="label-btn garbage"><span class="num">1</span> Garbage</button>
+            <button class="label-btn normal"><span class="num">2</span> Normal</button>
+            <button class="label-btn atypical"><span class="num">3</span> Atypical</button>
+            <button class="label-btn discard"><span class="num">4</span> Discard</button>
+          </div>
 
-        <div id="doneMessage" class="hidden">
-            <h2>All Done!</h2>
-            <p><strong><span id="labeledCount">0</span></strong> images labeled</p>
-            <button id="downloadFinal">Download JSON</button>
-            <button id="newFolderBtn">Label Another Folder</button>
+          <!-- Download -->
+          <button id="downloadBtn" class="btn-download">Download Labeled ZIP</button>
         </div>
+      </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Done Screen -->
+    <div id="doneCard" class="upload-card hidden">
+      <h2>All Done!</h2>
+      <p><strong id="finalCount">0</strong> boxes labeled.</p>
+      <div class="final-actions">
+        <button id="downloadFinal" class="btn-download">Download ZIP</button>
+        <button id="newZipBtn" class="btn-upload">New ZIP</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
