@@ -6,5 +6,5 @@ http://localhost:8002/
 
 git add .
 
-git commit -m "Deploy GE Healthcare × BeesLab YOLO Labeler v1.0"
+git commit -m "Updated as in the requirements from the meeting"
 
